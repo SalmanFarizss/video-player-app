@@ -61,7 +61,7 @@ class HomeRepository {
     List<String> videoLinks = [];
     try {
       List<String> videoIds =[];
-      const String apiUrl ='https://www.googleapis.com/drive/v3/files?q=\'1Il-Ba-xevulNWu6o6Up4-H_ynj6ztW_-\'+in+parents&key=AIzaSyBiYrppNeiE-uYJVrTvRN82bEy88_Sutyw';
+      const String apiUrl ='https://www.googleapis.com/drive/v3/files?q=\'YOUR-DRIVE-FOLDER-ID\'+in+parents&key=YOUR-DRIVE-API-KEY';
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
