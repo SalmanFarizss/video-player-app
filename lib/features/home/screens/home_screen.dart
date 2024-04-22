@@ -1,167 +1,93 @@
+import 'dart:convert';
+import 'package:dropbox_client/dropbox_client.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lilac_task_app/features/auth/controller/auht_controller.dart';
 import 'package:lilac_task_app/features/auth/screens/splash_screen.dart';
+import 'package:lilac_task_app/features/home/controller/home_controller.dart';
+import 'package:lilac_task_app/features/home/screens/drawer.dart';
+import 'package:lilac_task_app/features/home/screens/profile_screen.dart';
+import 'package:lilac_task_app/features/home/screens/video_screen.dart';
+import 'package:lilac_task_app/models/user_model.dart';
 import 'package:video_player/video_player.dart';
+import '../../../core/commons/loading.dart';
 
-class HomeScreen extends StatefulWidget {
+final darkThemeProvider = StateProvider<bool>((ref) => false);
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
-
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-   late VideoPlayerController _playerController;
+  bool isLoading=true;
   @override
   void initState() {
-    _playerController = VideoPlayerController.networkUrl(Uri.parse(
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'))
-      ..initialize().then((value) {
-        setState(() {});
+    ref.read(homeControllerProvider.notifier).getVideosFromOnline(context);
+    Future.delayed(Duration(seconds: 2),(){
+      setState(() {
+        isLoading=false;
       });
+    });
     super.initState();
   }
-  bool paused=false;
+  bool paused = true;
   @override
   Widget build(BuildContext context) {
-    if(paused){
-      _playerController.pause();
-    }else{
-      _playerController.play();
-    }
+    List<String> videos = ref.watch(videoProvider);
+    // if(videos.isNotEmpty){
+    //   _playerController = VideoPlayerController.networkUrl(Uri.parse(
+    //       'https://drive.google.com/uc?export=view&id=${videos.first}'))
+    //     ..initialize().then((value) {
+    //       setState(() {});
+    //     });
+    // }
+    UserModel user = ref.watch(userProvider)!;
     return SafeArea(
-      child: Scaffold(
-        key: _scaffoldKey,
-        drawer: Drawer(
-          child: Column(
-            children: [],
-          ),
-        ),
-        backgroundColor: Colors.grey.shade100,
-        body: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            Column(
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      height: height * 0.28,
+            child: Scaffold(
+              key: _scaffoldKey,
+              drawer: HomeDrawer(
+                user: user,
+              ),
+              // backgroundColor:Theme.of(context).colorScheme.background,
+              body:isLoading?const Loading() : Stack(
+                children: [
+                  videos.isEmpty? Center(child: Text('No Images Found'),):
+                  VideoScreen(videoList: videos),
+                  Padding(
+                    padding: EdgeInsets.all(width * 0.03),
+                    child: SizedBox(
                       width: width,
-                      color: Colors.red.shade100,
-                      child: _playerController.value.isInitialized
-                          ? AspectRatio(
-                        aspectRatio: _playerController.value.aspectRatio,
-                        child: VideoPlayer(_playerController),
-                      )
-                          : Container(
-                        // height: height * 0.28,
-                        // width: width,
-                        color: Colors.grey,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          InkWell(
+                              onTap: () {
+                                _scaffoldKey.currentState?.openDrawer();
+                              },
+                              child: Icon(
+                                Icons.menu,
+                                size: width * 0.1,
+                                color: Colors.white,
+                              )),
+                          Container(
+                            height: width * 0.12,
+                            width: width * 0.12,
+                            decoration: BoxDecoration(
+                                image:DecorationImage(image:  NetworkImage(user.imageUrl),fit: BoxFit.cover),
+                                borderRadius: BorderRadius.circular(15)),
+                          )
+                        ],
                       ),
                     ),
-                    InkWell(onTap:() {
-                      setState(() {
-                        paused=!paused;
-                      });
-                    },
-                      child:paused?Icon(CupertinoIcons.play):Icon(Icons.pause)
-                      ,
-                    )
-                  ],
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                Padding(
-                  padding: EdgeInsets.all(width * 0.02),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          height: width * 0.1,
-                          width: width * 0.1,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(13),
-                              color: Colors.white),
-                          child: const Icon(CupertinoIcons.left_chevron),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          height: width * 0.1,
-                          width: width * 0.32,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(13),
-                              color: Colors.white),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.arrow_drop_down,
-                                  color: Color.fromRGBO(87, 238, 157, 1),
-                                  size: width * 0.1),
-                              Text(
-                                'Download',
-                                style: TextStyle(
-                                    fontSize: width * 0.032,
-                                    fontWeight: FontWeight.w500),
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {},
-                        child: Container(
-                          height: width * 0.1,
-                          width: width * 0.1,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Colors.white),
-                          child: const Icon(CupertinoIcons.right_chevron),
-                        ),
-                      ),
-                    ],
                   ),
-                )
-              ],
+                ],
+              )
             ),
-            Padding(
-              padding: EdgeInsets.all(width * 0.03),
-              child: SizedBox(
-                width: width,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    InkWell(
-                        onTap: () {
-                          _scaffoldKey.currentState?.openDrawer();
-                        },
-                        child: Icon(
-                          Icons.menu,
-                          size: width * 0.1,
-                          color: Colors.white,
-                        )),
-                    Container(
-                      height: width * 0.12,
-                      width: width * 0.12,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          color: Colors.brown),
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 }

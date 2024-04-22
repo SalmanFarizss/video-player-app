@@ -1,24 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lilac_task_app/core/utils.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lilac_task_app/core/commons/loading.dart';
+import 'package:lilac_task_app/features/auth/controller/auht_controller.dart';
 import 'package:lilac_task_app/features/auth/screens/splash_screen.dart';
-
+import 'package:telephony/telephony.dart';
 import '../../../core/constants/constants.dart';
-import 'otp_screen.dart';
 
-class PhoneNoScreen extends StatefulWidget {
+class PhoneNoScreen extends ConsumerStatefulWidget {
   const PhoneNoScreen({super.key});
 
   @override
-  State<PhoneNoScreen> createState() => _PhoneNoScreenState();
+  ConsumerState<PhoneNoScreen> createState() => _PhoneNoScreenState();
 }
 
-class _PhoneNoScreenState extends State<PhoneNoScreen> {
+class _PhoneNoScreenState extends ConsumerState<PhoneNoScreen> {
+  final Telephony telephony = Telephony.instance;
   TextEditingController phoneController=TextEditingController();
   @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
+  }
+  @override
+  void initState() {
+    telephony.requestSmsPermissions;
+    super.initState();
+  }
+  @override
   Widget build(BuildContext context) {
+    bool isLoading=ref.watch(authControllerProvider);
     return Scaffold(
-        body:Padding(
+        body:isLoading?const Loading():Padding(
           padding: EdgeInsets.symmetric(horizontal: width * 0.05),
           child: SingleChildScrollView(
             child: Column(
@@ -28,6 +41,15 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                 SizedBox(
                   height: height * 0.1,
                 ),
+                Text(
+                  'Hello,',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                Text(
+                  'Verify your phone number',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                SizedBox(height: height*0.05,),
                 SizedBox(
                   height: height * 0.18,
                   width: width,
@@ -37,9 +59,8 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                   height: height * 0.06,
                 ),
                 Text(
-                  'Enter Phone Number',
-                  style: TextStyle(
-                      fontSize: width * 0.045, fontWeight: FontWeight.w500),
+                  'Phone Number',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 SizedBox(
                   height: height * 0.025,
@@ -47,6 +68,7 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                 SizedBox(
                   height: height * 0.06,
                   child: TextFormField(
+                    style:Theme.of(context).textTheme.bodyMedium,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(10)
@@ -57,9 +79,7 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                         label: RichText(
                           text:  TextSpan(
                               text: 'Enter Phone Number ',
-                              style: TextStyle(
-                                fontSize: width * 0.035,
-                                color:  Colors.grey,),
+                              style:Theme.of(context).textTheme.labelSmall,
                               children: [
                                 TextSpan(
                                     text: '*', style: TextStyle(fontSize:width * 0.035,color: Colors.red))
@@ -67,7 +87,7 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                         ),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color:Colors.grey.shade100))),
+                            borderSide: BorderSide(color:Theme.of(context).primaryColor))),
                   ),
                 ),
                 SizedBox(
@@ -75,19 +95,18 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
                 ),
                 InkWell(
                   onTap: () {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => OtpScreen(phoneNumber: phoneController.text,),));
+                    ref.read(authControllerProvider.notifier).verifyPhoneNumber(context: context, phone: phoneController.text.trim());
                   },
                   child: Container(
                     height: height * 0.06,
                     width: width,
                     decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(height * 0.25),
-                        color: Colors.black),
+                        color:Colors.black),
                     child: Center(
                         child: Text(
                           'Get OTP',
-                          style: TextStyle(
-                              fontSize: width * 0.05, color:Colors.white),
+                          style:Theme.of(context).textTheme.labelLarge,
                         )),
                   ),
                 )
@@ -95,10 +114,5 @@ class _PhoneNoScreenState extends State<PhoneNoScreen> {
             ),
           ),
         ));
-  }
-  @override
-  void dispose() {
-    phoneController.dispose();
-    super.dispose();
   }
 }
